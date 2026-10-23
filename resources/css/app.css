@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+
+@theme {
+    --font-display: 'Fredoka', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+
+    --color-sky: #8ED6EC;
+    --color-royal: #2E4BC0;
+    --color-navy: #1F2F8A;
+    --color-orange: #FBA93A;
+    --color-sun: #FFD86B;
+    --color-cream: #FFF8EA;
+    --color-ink: #1D2B33;
+    --color-muted: #65737D;
+    --color-line: #EFE4CC;
+    --color-accent-soft: #FFF2D4;
+    --color-primary-soft: #E3EAFB;
+    --color-ok: #2E9E5B;
+    --color-ok-soft: #E1F4E8;
+    --color-danger: #D64545;
+    --color-danger-soft: #FCE6E6;
+    --color-pink: #F4788C;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-cream);
+}
+
+.scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: var(--font-display);
+}
+
+::selection {
+    color: var(--color-ink);
+    background: var(--color-sun);
+}
+
+:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-orange) 65%, white);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
