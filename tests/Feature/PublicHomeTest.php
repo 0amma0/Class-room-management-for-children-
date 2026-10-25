@@ -60,6 +60,20 @@ test('public home page returns 200 for guests and does not leak private student 
     $response->assertSee('&lt; 3', false);
 });
 
+test('public home renders gentle motion hooks without changing its content', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('home-hero-copy', false)
+        ->assertSee('home-hero-art', false)
+        ->assertSee('home-motion-card', false)
+        ->assertSee('home-cloud-divider', false)
+        ->assertSee('reveal-on-scroll', false)
+        ->assertSee('new IntersectionObserver', false)
+        ->assertSee('prefers-reduced-motion: reduce', false)
+        ->assertSee('Learn, Play,', false)
+        ->assertSee('Explore Regions', false);
+});
+
 test('public home stats match database records', function () {
     $region = Region::create(['name' => 'Jawa Barat', 'is_active' => true]);
     $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Klaster 1', 'is_active' => true]);
@@ -147,13 +161,13 @@ test('public classes page shows active classes and the original Book 3 module', 
     $this->get(route('classes'))
         ->assertOk()
         ->assertSee('GPI Class 01')
-        ->assertSee(route('classes.module'), false)
-        ->assertSee(route('classes.module.download'), false)
+        ->assertSee('Minta izin membaca')
+        ->assertSee('Minta izin mengunduh')
+        ->assertDontSee(route('classes.module'), false)
+        ->assertDontSee(route('classes.module.download'), false)
         ->assertDontSee('Private Student')
         ->assertDontSee('Private Parent');
 
-    $this->get(route('classes.module'))
-        ->assertOk()
-        ->assertHeader('Content-Type', 'application/pdf');
-    $this->get(route('classes.module.download'))->assertDownload('modul-buku-3.pdf');
+    $this->get(route('classes.module'))->assertForbidden();
+    $this->get(route('classes.module.download'))->assertForbidden();
 });

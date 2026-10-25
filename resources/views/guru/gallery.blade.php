@@ -6,6 +6,7 @@
             <p class="mt-1 text-sm text-muted">Foto dan karya disimpan privat, serta hanya dapat dilihat oleh Guru yang memiliki akses ke kelas tersebut.</p>
         </header>
         @if(session('success'))<x-ui-alert variant="ok">{{ session('success') }}</x-ui-alert>@endif
+        @if(session('warning'))<x-ui-alert variant="warning">{{ session('warning') }}</x-ui-alert>@endif
         @if($errors->any())<x-ui-alert variant="danger" title="Foto belum dapat disimpan">{{ $errors->first() }}</x-ui-alert>@endif
 
         <form method="POST" action="{{ route('guru.gallery.store') }}" enctype="multipart/form-data" class="grid gap-4 rounded-3xl border border-line bg-white p-5 shadow-sm sm:grid-cols-2 sm:p-7 lg:grid-cols-3">
@@ -32,6 +33,11 @@
                         <h2 class="font-display font-bold text-navy">{{ $photo->class->name }}</h2>
                         <p class="text-xs text-muted">{{ $photo->photo_date->format('d M Y') }}@if($photo->session_label) · {{ $photo->session_label }}@endif</p>
                         @if($photo->caption)<p class="text-sm text-ink">{{ $photo->caption }}</p>@endif
+                        <form method="POST" action="{{ route('guru.gallery.destroy', $photo) }}" class="pt-2" onsubmit="return confirm('Hapus foto ini dari galeri kelas?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="rounded-full border border-danger/30 px-4 py-2 text-xs font-bold text-danger">Hapus foto</button>
+                        </form>
                     </div>
                 </article>
             @empty

@@ -52,7 +52,7 @@
                                     <td class="px-5 py-4 font-semibold text-ink">
                                         {{ $activity->title }}
                                         @foreach($activity->photos as $photo)
-                                            <span class="mt-2 flex items-center gap-2 text-xs font-normal text-muted"><img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($photo->file_url) }}" alt="Activity image" class="size-10 rounded-md object-cover">{{ $photo->is_approved ? 'Image approved' : 'Image awaiting Admin review' }}</span>
+                                            <span class="mt-2 flex items-center gap-2 text-xs font-normal text-muted"><img src="{{ route('activity-photos.show', $photo) }}" alt="Activity image" class="size-10 rounded-md object-cover">{{ $photo->is_approved ? 'Image approved' : 'Image awaiting Admin review' }}</span>
                                         @endforeach
                                     </td>
                                     <td class="whitespace-nowrap px-5 py-4 text-muted">{{ $activity->activity_date?->format('M j, Y') ?? 'Date not set' }}</td>

@@ -16,8 +16,8 @@
                 <summary class="cursor-pointer list-none rounded-full bg-orange px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-orange/90">
                     Add participant
                 </summary>
-                <div class="fixed inset-0 z-50 overflow-y-auto bg-ink/50 p-4 sm:p-8">
-                    <section class="mx-auto mt-6 max-w-3xl space-y-5 rounded-3xl bg-white p-6 text-ink shadow-xl sm:p-8" aria-label="Add participant">
+                <div class="fixed inset-0 z-50 overflow-y-auto bg-ink/50 p-3 sm:p-6">
+                    <section class="mx-auto my-3 max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl space-y-5 overflow-y-auto rounded-3xl bg-white p-4 text-ink shadow-xl sm:my-0 sm:max-h-[calc(100dvh-3rem)] sm:p-8" aria-label="Add participant">
                         <div class="flex items-center justify-between gap-4">
                             <h2 class="font-display text-xl font-bold text-navy">Add participant</h2>
                             <button type="button" onclick="this.closest('details').open = false" class="rounded-lg px-3 py-2 text-sm font-bold text-muted hover:bg-cream">Close</button>
@@ -169,8 +169,8 @@
                                     <td class="whitespace-nowrap px-5 py-4 text-right">
                                         <details class="text-left">
                                             <summary class="cursor-pointer font-semibold text-royal hover:underline">Edit</summary>
-                                            <div class="fixed inset-0 z-50 overflow-y-auto bg-ink/50 p-4 sm:p-8">
-                                                <section class="mx-auto mt-6 max-w-3xl space-y-5 rounded-3xl bg-white p-6 text-ink shadow-xl sm:p-8" aria-label="Edit participant">
+                                            <div class="fixed inset-0 z-50 overflow-y-auto bg-ink/50 p-3 sm:p-6">
+                                                <section class="mx-auto my-3 max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl space-y-5 overflow-y-auto rounded-3xl bg-white p-4 text-ink shadow-xl sm:my-0 sm:max-h-[calc(100dvh-3rem)] sm:p-8" aria-label="Edit participant">
                                                     <div class="flex items-center justify-between gap-4">
                                                         <h2 class="font-display text-xl font-bold text-navy">Edit {{ $student->full_name }}</h2>
                                                         <button type="button" onclick="this.closest('details').open = false" class="rounded-lg px-3 py-2 text-sm font-bold text-muted hover:bg-cream">Close</button>

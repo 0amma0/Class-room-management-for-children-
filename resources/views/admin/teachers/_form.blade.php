@@ -47,19 +47,58 @@
         @if($classes->isEmpty())
             <p class="text-sm text-muted">Buat kelas aktif terlebih dahulu.</p>
         @else
+            @php
+                $regions = $classes->map(fn ($class) => $class->environment?->cluster?->region)->filter()->unique('id')->sortBy('name');
+                $clusters = $classes->map(fn ($class) => $class->environment?->cluster)->filter()->unique('id')->sortBy('name');
+                $environments = $classes->map(fn ($class) => $class->environment)->filter()->unique('id')->sortBy('name');
+            @endphp
+            <div class="grid gap-3 sm:grid-cols-3" data-class-assignment-filters>
+                <label class="space-y-1 text-xs font-semibold text-muted">
+                    <span>Region</span>
+                    <select data-filter="region" class="w-full rounded-xl border border-line px-3 py-2 text-sm font-normal">
+                        <option value="">Semua region</option>
+                        @foreach($regions as $region)
+                            <option value="{{ $region->id }}">{{ $region->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="space-y-1 text-xs font-semibold text-muted">
+                    <span>Klaster</span>
+                    <select data-filter="cluster" class="w-full rounded-xl border border-line px-3 py-2 text-sm font-normal">
+                        <option value="">Semua klaster</option>
+                        @foreach($clusters as $cluster)
+                            <option value="{{ $cluster->id }}" data-region-id="{{ $cluster->region_id }}">{{ $cluster->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="space-y-1 text-xs font-semibold text-muted">
+                    <span>Lingkungan</span>
+                    <select data-filter="environment" class="w-full rounded-xl border border-line px-3 py-2 text-sm font-normal">
+                        <option value="">Semua lingkungan</option>
+                        @foreach($environments as $environment)
+                            <option value="{{ $environment->id }}" data-cluster-id="{{ $environment->cluster_id }}">{{ $environment->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+            </div>
             <div class="grid gap-3 sm:grid-cols-2">
+                @php
+                    $selectedClasses = old('classes', $assignedClassIds);
+                    $selectedClasses = is_array($selectedClasses) ? array_map('intval', $selectedClasses) : [];
+                    $selectedPrimary = (int) old('primary_class_id', $primaryClassId);
+                @endphp
                 @foreach($classes as $class)
-                    @php
-                        $selectedClasses = old('classes', $assignedClassIds);
-                        $selectedPrimary = old('primary_class_id', $primaryClassId);
-                    @endphp
-                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-cream/70 p-3 text-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-cream/70 p-3 text-sm"
+                        data-assignment-class
+                        data-region-id="{{ $class->environment?->cluster?->region_id }}"
+                        data-cluster-id="{{ $class->environment?->cluster_id }}"
+                        data-environment-id="{{ $class->environment_id }}">
                         <label class="flex items-center gap-2 font-semibold text-ink">
-                            <input type="checkbox" name="classes[]" value="{{ $class->id }}" @checked(in_array($class->id, array_map('intval', $selectedClasses), true)) class="rounded border-line text-orange focus:ring-orange">
-                            {{ $class->name }} <span class="text-xs font-normal text-muted">{{ $class->code }}</span>
+                            <input type="checkbox" name="classes[]" value="{{ $class->id }}" @checked(in_array($class->id, $selectedClasses, true)) class="rounded border-line text-orange focus:ring-orange">
+                            {{ $class->name }} <span class="text-xs font-normal text-muted">{{ $class->code }} · {{ $class->environment?->name }}</span>
                         </label>
                         <label class="flex items-center gap-2 text-xs text-muted">
-                            <input type="radio" name="primary_class_id" value="{{ $class->id }}" @checked((int) $selectedPrimary === $class->id) required class="border-line text-orange focus:ring-orange">
+                            <input type="radio" name="primary_class_id" value="{{ $class->id }}" @checked($selectedPrimary === $class->id) required class="border-line text-orange focus:ring-orange">
                             Guru utama
                         </label>
                     </div>
@@ -72,3 +111,53 @@
         {{ $isEditing ? 'Simpan perubahan' : 'Buat akun guru' }}
     </button>
 </form>
+
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-class-assignment-filters]').forEach((filters) => {
+        const form = filters.closest('form');
+        const region = filters.querySelector('[data-filter="region"]');
+        const cluster = filters.querySelector('[data-filter="cluster"]');
+        const environment = filters.querySelector('[data-filter="environment"]');
+        const classRows = form.querySelectorAll('[data-assignment-class]');
+
+        const updateFilters = () => {
+            const regionId = region.value;
+
+            Array.from(cluster.options).forEach((option) => {
+                if (option.value !== '') {
+                    option.hidden = regionId !== '' && option.dataset.regionId !== regionId;
+                }
+            });
+            if (cluster.selectedOptions[0]?.hidden) {
+                cluster.value = '';
+            }
+
+            const clusterId = cluster.value;
+            Array.from(environment.options).forEach((option) => {
+                if (option.value !== '') {
+                    option.hidden = clusterId !== '' && option.dataset.clusterId !== clusterId;
+                    if (regionId !== '') {
+                        const parent = form.querySelector(`[data-filter="cluster"] option[value="${option.dataset.clusterId}"]`);
+                        option.hidden ||= parent?.dataset.regionId !== regionId;
+                    }
+                }
+            });
+            if (environment.selectedOptions[0]?.hidden) {
+                environment.value = '';
+            }
+
+            classRows.forEach((row) => {
+                row.hidden = (regionId !== '' && row.dataset.regionId !== regionId)
+                    || (cluster.value !== '' && row.dataset.clusterId !== cluster.value)
+                    || (environment.value !== '' && row.dataset.environmentId !== environment.value);
+            });
+        };
+
+        region.addEventListener('change', updateFilters);
+        cluster.addEventListener('change', updateFilters);
+        environment.addEventListener('change', updateFilters);
+        updateFilters();
+    });
+</script>
+@endpush

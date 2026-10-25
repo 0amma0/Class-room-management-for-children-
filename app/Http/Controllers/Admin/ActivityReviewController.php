@@ -7,6 +7,10 @@ use App\Models\Activity;
 use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -55,5 +59,59 @@ class ActivityReviewController extends Controller
             'success',
             $data['status'] === 'published' ? 'Kegiatan berhasil diterbitkan.' : 'Kegiatan berhasil diarsipkan.',
         );
+    }
+
+    public function destroyAll(Request $request): RedirectResponse
+    {
+        $activityIds = Activity::query()
+            ->whereIn('scope_type', ['class', 'environment', 'cluster'])
+            ->pluck('id');
+
+        if ($activityIds->isEmpty()) {
+            return redirect()->route('admin.activities')->with('success', 'Tidak ada aktivitas untuk dihapus.');
+        }
+
+        $photoPaths = DB::table('activity_photos')
+            ->whereIn('activity_id', $activityIds)
+            ->pluck('file_url');
+
+        DB::transaction(function () use ($activityIds, $request): void {
+            DB::table('activity_photos')->whereIn('activity_id', $activityIds)->delete();
+            Activity::query()->whereIn('id', $activityIds)->delete();
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'deleted',
+                'entity_type' => 'activity_review_bulk',
+                'meta' => ['deleted_count' => $activityIds->count()],
+                'ip' => $request->ip(),
+            ]);
+        });
+
+        $failedFiles = [];
+        foreach ($photoPaths as $path) {
+            if (! is_string($path) || ! Str::startsWith($path, 'activity-photos/')) {
+                continue;
+            }
+
+            $disk = Storage::disk('local');
+            if ($disk->exists($path) && ! $disk->delete($path)) {
+                $failedFiles[] = $path;
+                Log::error('Unable to delete activity review image after bulk activity deletion.', ['path' => $path]);
+            }
+
+            $legacyDisk = Storage::disk('public');
+            if ($legacyDisk->exists($path) && ! $legacyDisk->delete($path)) {
+                $failedFiles[] = $path;
+                Log::error('Unable to delete legacy public activity review image after bulk activity deletion.', ['path' => $path]);
+            }
+        }
+
+        if ($failedFiles !== []) {
+            return redirect()->route('admin.activities')
+                ->with('warning', count($failedFiles).' file foto tidak berhasil dihapus. Data aktivitas sudah dihapus; periksa log aplikasi.');
+        }
+
+        return redirect()->route('admin.activities')->with('success', $activityIds->count().' aktivitas berhasil dihapus.');
     }
 }

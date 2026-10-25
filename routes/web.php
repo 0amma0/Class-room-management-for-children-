@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityPhotoController;
 use App\Http\Controllers\Admin\ActivityReviewController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminMasterDataController;
@@ -37,6 +38,9 @@ use Illuminate\Support\Facades\Route;
 // Public Home Route (No authentication required)
 Route::get('/', PublicHomeController::class)->name('home');
 Route::get('/classes', [PublicClassesController::class, 'index'])->name('classes');
+Route::get('/activity-photos/{photo}', [ActivityPhotoController::class, 'show'])
+    ->whereNumber('photo')
+    ->name('activity-photos.show');
 Route::get('/classes/module', [PublicClassesController::class, 'module'])->name('classes.module');
 Route::get('/classes/module/download', [PublicClassesController::class, 'downloadModule'])->name('classes.module.download');
 Route::get('/regions', [PublicRegionController::class, 'index'])->name('regions');
@@ -58,6 +62,8 @@ Route::get('/permintaan-materi/{token}', [LearningMaterialController::class, 'sh
     ->name('learning-materials.requests.show');
 Route::get('/permintaan-materi/{token}/unduh', [LearningMaterialController::class, 'downloadRequest'])
     ->name('learning-materials.requests.download');
+Route::get('/permintaan-materi/{token}/baca', [LearningMaterialController::class, 'readRequest'])
+    ->name('learning-materials.requests.read');
 
 // Guest Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -66,7 +72,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // Authenticated General Routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'password.changed'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -92,7 +98,7 @@ Route::middleware('auth')->group(function () {
 // Admin Routes (Restricted strictly to role: admin)
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['auth', 'role:admin'])
+    ->middleware(['auth', 'role:admin', 'password.changed'])
     ->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
         Route::get('/regions', [AdminModuleController::class, 'regions'])->name('regions');
@@ -121,6 +127,7 @@ Route::prefix('admin')
         Route::post('/teachers/{teacherId}/reset-password', [TeacherAccountController::class, 'resetPassword'])->name('teachers.reset-password');
         Route::get('/backups', [BackupController::class, 'index'])->name('backups');
         Route::post('/backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::delete('/backups', [BackupController::class, 'destroyAll'])->name('backups.destroy-all');
         Route::get('/backups/export', [DataExchangeController::class, 'export'])->name('backups.export');
         Route::get('/backups/{filename}', [BackupController::class, 'download'])->name('backups.download');
         Route::get('/activity-cards', [PublicActivityCardController::class, 'index'])->name('activity-cards');
@@ -132,6 +139,7 @@ Route::prefix('admin')
         Route::get('/user-guide', [UserGuideController::class, 'admin'])->name('user-guide');
         Route::get('/activities', [ActivityReviewController::class, 'index'])->name('activities');
         Route::put('/activities/{activity}', [ActivityReviewController::class, 'update'])->name('activities.update');
+        Route::delete('/activities', [ActivityReviewController::class, 'destroyAll'])->name('activities.destroy-all');
         Route::get('/students', [StudentController::class, 'index'])->name('students');
         Route::get('/students/export', [DataExchangeController::class, 'export'])->name('students.export');
         Route::get('/students/template', [DataExchangeController::class, 'template'])->name('students.template');
@@ -157,7 +165,7 @@ Route::prefix('admin')
 // Guru Routes (Restricted strictly to role: guru)
 Route::prefix('guru')
     ->name('guru.')
-    ->middleware(['auth', 'role:guru'])
+    ->middleware(['auth', 'role:guru', 'password.changed'])
     ->group(function () {
         Route::get('/dashboard', [GuruDashboardController::class, 'dashboard'])->name('dashboard');
         Route::get('/user-guide', [UserGuideController::class, 'guru'])->name('user-guide');
@@ -190,6 +198,7 @@ Route::prefix('guru')
         Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery');
         Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
         Route::get('/gallery/{photo}/file', [GalleryController::class, 'file'])->name('gallery.file');
+        Route::delete('/gallery/{photo}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
         Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->name('lesson-plans');
         Route::post('/lesson-plans', [LessonPlanController::class, 'store'])->name('lesson-plans.store');
         Route::put('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->name('lesson-plans.update');

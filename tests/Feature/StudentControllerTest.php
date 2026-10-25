@@ -37,3 +37,36 @@ test('participant hierarchy filters include all classes in an environment', func
         ->assertSee('Filter Participant Two')
         ->assertDontSee('Other Participant');
 });
+
+test('participant form fits the page and constrains its fields in the responsive modal', function () {
+    $admin = User::factory()->admin()->create();
+    $region = Region::create(['name' => 'Form Region']);
+    $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Form Cluster']);
+    $environment = Environment::create(['cluster_id' => $cluster->id, 'name' => 'Form Community']);
+    Classes::create([
+        'environment_id' => $environment->id,
+        'name' => 'Form Class',
+        'code' => 'FORM-CLASS',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.students'))
+        ->assertOk()
+        ->assertSee('max-h-[calc(100dvh-1.5rem)]', false)
+        ->assertSee('max-w-3xl', false)
+        ->assertSee('grid w-full min-w-0 gap-4 sm:grid-cols-2', false)
+        ->assertSee('name="full_name"', false)
+        ->assertSee('name="parent_phone"', false);
+});
+
+test('participant creation rejects invalid required fields without saving a record', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)->post(route('admin.students.store'), [
+        'class_id' => 999999,
+        'full_name' => '',
+        'birth_date' => 'not-a-date',
+    ])->assertSessionHasErrors(['class_id', 'full_name', 'birth_date']);
+
+    $this->assertDatabaseCount('students', 0);
+});

@@ -30,6 +30,9 @@ class ProfileController extends Controller
             'avatar' => ['nullable', 'image', 'max:2048'],
             'avatar_type' => ['nullable', Rule::in(['bangs', 'pigtails', 'afro', 'short', 'bun', 'braids', 'short-blue'])],
         ];
+        if ($user->isAdmin()) {
+            $rules['username'] = ['sometimes', 'required', 'string', 'max:255', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)];
+        }
         if ($user->isGuru()) {
             $rules = [
                 ...$rules,
@@ -63,6 +66,9 @@ class ProfileController extends Controller
             'phone' => $data['phone'] ?? null,
             'avatar_path' => $avatarPath,
         ];
+        if ($user->isAdmin() && array_key_exists('username', $data)) {
+            $profileAttributes['username'] = $data['username'];
+        }
         if ($hasAvatarTypeColumn) {
             $profileAttributes['avatar_type'] = $avatarType;
         }

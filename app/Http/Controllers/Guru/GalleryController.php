@@ -8,6 +8,7 @@ use App\Support\GuruClassAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -87,5 +88,26 @@ class GalleryController extends Controller
         return Storage::disk('local')->response($photo->file_path, basename($photo->file_path), [
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function destroy(Request $request, ClassGalleryPhoto $photo, GuruClassAccess $access): RedirectResponse
+    {
+        abort_unless($access->classesFor($request->user())->whereKey($photo->class_id)->exists(), 404);
+
+        $fileExists = Storage::disk('local')->exists($photo->file_path);
+        DB::transaction(fn () => $photo->delete());
+
+        if ($fileExists && ! Storage::disk('local')->delete($photo->file_path)) {
+            Log::error('Unable to delete private class gallery photo after metadata deletion.', [
+                'photo_id' => $photo->id,
+                'file_path' => $photo->file_path,
+                'user_id' => $request->user()->id,
+            ]);
+
+            return redirect()->route('guru.gallery')
+                ->with('warning', 'Data foto dihapus, tetapi file foto gagal dihapus. Periksa log aplikasi.');
+        }
+
+        return redirect()->route('guru.gallery')->with('success', 'Foto berhasil dihapus dari galeri kelas.');
     }
 }

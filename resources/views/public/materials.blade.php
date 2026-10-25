@@ -30,6 +30,7 @@
                     </div>
                     <form method="POST" action="{{ route('learning-materials.requests.store', $material) }}" class="grid gap-3 border-t border-line pt-4">
                         @csrf
+                        <input type="hidden" name="requested_action" value="download">
                         <label class="space-y-1 text-xs font-semibold text-navy"><span>Nama</span><input name="requester_name" value="{{ old('requester_name') }}" required maxlength="255" autocomplete="name" class="w-full rounded-xl border border-line px-3 py-2 text-sm font-normal"></label>
                         <label class="space-y-1 text-xs font-semibold text-navy"><span>Email untuk identifikasi permintaan</span><input type="email" name="requester_email" value="{{ old('requester_email') }}" required maxlength="255" autocomplete="email" class="w-full rounded-xl border border-line px-3 py-2 text-sm font-normal"></label>
                         <button class="justify-self-start rounded-full bg-orange px-5 py-2.5 text-sm font-bold text-white hover:bg-orange/90">Ajukan izin unduh</button>

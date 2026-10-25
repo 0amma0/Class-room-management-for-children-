@@ -101,6 +101,14 @@ test('an admin reset temporary password replaces the old password and remains us
     $loginResponse->assertRedirect('/guru/dashboard');
 
     $this->assertAuthenticatedAs($guru);
+    $this->get('/guru/dashboard')->assertRedirect(route('password.change'));
+    $this->get(route('password.change'))->assertOk();
+    $this->post(route('password.update'), [
+        'current_password' => $credentials['password'],
+        'password' => 'NewTeacherPass123',
+        'password_confirmation' => 'NewTeacherPass123',
+    ])->assertRedirect(route('profile'));
+    expect($guru->fresh()->must_change_password)->toBeFalse();
     $this->get('/guru/dashboard')->assertOk();
 });
 
@@ -120,7 +128,7 @@ test('inactive users cannot authenticate', function () {
     $response->assertSessionHasErrors('login');
 });
 
-test('users with must_change_password can still sign in and continue to the dashboard', function () {
+test('users with must_change_password must change it before accessing their dashboard', function () {
     $guru = User::factory()->guru()->mustChangePassword()->create([
         'username' => 'guru_must_change',
         'password' => Hash::make('Password123'),
@@ -134,6 +142,7 @@ test('users with must_change_password can still sign in and continue to the dash
 
     $this->assertAuthenticatedAs($guru);
     $response->assertRedirect('/guru/dashboard');
+    $this->get('/guru/dashboard')->assertRedirect(route('password.change'));
 });
 
 test('teacher accounts created by admin can sign in with the temporary password', function () {

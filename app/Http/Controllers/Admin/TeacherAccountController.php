@@ -28,7 +28,8 @@ class TeacherAccountController extends Controller
         $classes = Classes::query()
             ->where('status', 'active')
             ->orderBy('name')
-            ->get(['id', 'name', 'code']);
+            ->with('environment.cluster.region')
+            ->get(['id', 'name', 'code', 'environment_id']);
 
         return view('admin.teachers.index', compact('teachers', 'classes'));
     }

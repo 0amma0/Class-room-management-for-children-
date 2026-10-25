@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classes;
+use App\Models\LearningMaterial;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -17,28 +18,21 @@ class PublicClassesController extends Controller
             ->orderBy('name')
             ->get(['id', 'environment_id', 'name', 'code', 'location', 'schedule', 'photo_path']);
 
-        return view('public.classes', compact('classes'));
+        $bookModule = LearningMaterial::query()
+            ->where('slug', 'modul-buku-3')
+            ->where('is_active', true)
+            ->first();
+
+        return view('public.classes', compact('classes', 'bookModule'));
     }
 
     public function module(): BinaryFileResponse
     {
-        $path = base_path('docs/modul buku 3.pdf');
-        abort_unless(is_file($path), 404, 'Modul Buku 3 tidak ditemukan.');
-
-        return response()->file($path, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="modul-buku-3.pdf"',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        abort(403, 'Ajukan izin Admin melalui halaman Classes sebelum membaca modul.');
     }
 
     public function downloadModule(): BinaryFileResponse
     {
-        $path = base_path('docs/modul buku 3.pdf');
-        abort_unless(is_file($path), 404, 'Modul Buku 3 tidak ditemukan.');
-
-        return response()->download($path, 'modul-buku-3.pdf', [
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        abort(403, 'Ajukan izin Admin melalui halaman Classes sebelum mengunduh modul.');
     }
 }

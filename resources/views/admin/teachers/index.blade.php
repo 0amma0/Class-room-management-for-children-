@@ -79,7 +79,7 @@
                                 <!-- Teacher avatar + name -->
                                 <td class="py-4 px-4">
                                     <div class="flex items-center gap-3">
-                                        <x-ui-avatar :type="$avatarTypes[$index % count($avatarTypes)]" size="sm" />
+                                        <x-ui-avatar :type="$teacher->user?->avatar_type ?? $avatarTypes[$index % count($avatarTypes)]" :image="$teacher->user?->avatar_path" size="sm" :alt="$teacher->full_name" />
                                         <div>
                                             <span class="font-display font-bold text-[#1D2B33] block">
                                                 {{ $teacher->full_name }}

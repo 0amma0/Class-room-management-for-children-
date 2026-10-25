@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\LessonPlanReminder;
 use App\Models\Activity;
 use App\Models\ActivityPhoto;
 use App\Models\Classes;
@@ -15,8 +16,9 @@ use App\Models\TeacherReflection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -259,8 +261,10 @@ test('a teacher can update and archive activities and manage family visits', fun
 
 test('teacher activity images stay private until an admin publishes the activity', function () {
     Storage::fake('public');
+    Storage::fake('local');
     [$guru, , $class] = assignedGuruFixture();
     $admin = User::factory()->admin()->create();
+    $unassignedGuru = User::factory()->guru()->create(['must_change_password' => false]);
 
     $this->actingAs($guru)->post(route('guru.activities.store'), [
         'class_id' => $class->id,
@@ -274,8 +278,14 @@ test('teacher activity images stay private until an admin publishes the activity
     $photo = ActivityPhoto::query()->where('activity_id', $activity->id)->firstOrFail();
     expect($activity->status)->toBe('pending_review')
         ->and($photo->is_approved)->toBeFalse();
-    $this->assertTrue(Storage::disk('public')->exists($photo->file_url));
-    $imageUrl = Storage::url($photo->file_url);
+    Storage::disk('local')->assertExists($photo->file_url);
+    Storage::disk('public')->assertMissing($photo->file_url);
+    $imageUrl = route('activity-photos.show', $photo);
+    Auth::logout();
+    $this->get($imageUrl)->assertNotFound();
+    $this->actingAs($unassignedGuru)->get($imageUrl)->assertNotFound();
+    $this->actingAs($guru)->get($imageUrl)->assertOk();
+    $this->actingAs($admin)->get($imageUrl)->assertOk();
     $this->get(route('home'))->assertDontSee($imageUrl, false);
 
     $this->actingAs($guru)->put(route('guru.activities.update', $activity), [
@@ -291,8 +301,9 @@ test('teacher activity images stay private until an admin publishes the activity
     expect($activity->title)->toBe('Updated activity with image')
         ->and($activity->status)->toBe('pending_review')
         ->and($photo->is_approved)->toBeFalse();
-    $this->assertTrue(Storage::disk('public')->exists($photo->file_url));
-    $imageUrl = Storage::url($photo->file_url);
+    Storage::disk('local')->assertExists($photo->file_url);
+    Storage::disk('public')->assertMissing($photo->file_url);
+    $imageUrl = route('activity-photos.show', $photo);
     $this->get(route('home'))->assertDontSee($imageUrl, false);
 
     $this->actingAs($admin)->put(route('admin.activities.update', $activity), [
@@ -300,12 +311,18 @@ test('teacher activity images stay private until an admin publishes the activity
     ])->assertRedirect(route('admin.activities'));
 
     expect($photo->fresh()->is_approved)->toBeTrue();
+    Auth::logout();
+    $this->get($imageUrl)->assertOk();
     $this->get(route('home'))->assertSee('Updated activity with image')->assertSee($imageUrl, false);
     $this->get(route('home'))->assertSee($imageUrl, false);
+
+    $activity->update(['status' => 'archived']);
+    $this->get($imageUrl)->assertNotFound();
 });
 
 test('teacher activity uploads reject non-image files without partial writes', function () {
     Storage::fake('public');
+    Storage::fake('local');
     [$guru, , $class] = assignedGuruFixture();
 
     $this->actingAs($guru)->post(route('guru.activities.store'), [
@@ -316,7 +333,36 @@ test('teacher activity uploads reject non-image files without partial writes', f
 
     $this->assertDatabaseMissing('activities', ['title' => 'Activity with invalid upload']);
     $this->assertDatabaseCount('activity_photos', 0);
-    expect(Storage::disk('public')->allFiles('activity-photos'))->toBeEmpty();
+    expect(Storage::disk('local')->allFiles('activity-photos'))->toBeEmpty();
+});
+
+test('legacy public activity photos can be moved into private storage', function () {
+    Storage::fake('public');
+    Storage::fake('local');
+    [$guru, , $class] = assignedGuruFixture();
+    $activity = Activity::query()->create([
+        'title' => 'Legacy activity',
+        'scope_type' => 'class',
+        'class_id' => $class->id,
+        'status' => 'pending_review',
+        'created_by' => $guru->id,
+    ]);
+    $path = 'activity-photos/legacy-photo.jpg';
+    Storage::disk('public')->putFileAs(
+        'activity-photos',
+        UploadedFile::fake()->image('legacy-photo.jpg'),
+        'legacy-photo.jpg',
+    );
+    ActivityPhoto::query()->create([
+        'activity_id' => $activity->id,
+        'file_url' => $path,
+        'is_approved' => false,
+    ]);
+
+    $this->artisan('app:secure-activity-photos')->assertSuccessful();
+
+    Storage::disk('local')->assertExists($path);
+    Storage::disk('public')->assertMissing($path);
 });
 
 test('teacher module routes render and the original PDF is served privately', function () {
@@ -369,5 +415,5 @@ test('the scheduled reminder emails the plan owner on the selected day', functio
     $this->artisan('app:lesson-plan-reminders')->assertSuccessful();
 
     expect($plan->fresh()->reminder_sent_at)->not->toBeNull();
-    Mail::assertSent(\App\Mail\LessonPlanReminder::class, fn ($mail): bool => $mail->lessonPlan->is($plan));
+    Mail::assertSent(LessonPlanReminder::class, fn ($mail): bool => $mail->lessonPlan->is($plan));
 });

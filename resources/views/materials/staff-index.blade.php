@@ -53,21 +53,22 @@
         @if($isAdmin)
             <section id="download-requests" class="space-y-4">
                 <div>
-                    <h2 class="font-display text-2xl font-bold text-navy">Permintaan izin unduh</h2>
-                    <p class="mt-1 text-sm text-muted">Tinjau permintaan publik sebelum materi dapat diunduh.</p>
+                    <h2 class="font-display text-2xl font-bold text-navy">Permintaan izin materi</h2>
+                    <p class="mt-1 text-sm text-muted">Tinjau permintaan publik sebelum materi dapat dibaca atau diunduh.</p>
                 </div>
                 <div class="overflow-hidden rounded-3xl border border-line bg-white shadow-sm">
                     @if($requests->isEmpty())
-                        <p class="p-6 text-sm text-muted">Belum ada permintaan unduh.</p>
+                        <p class="p-6 text-sm text-muted">Belum ada permintaan izin.</p>
                     @else
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[850px] text-left text-sm">
-                                <thead class="bg-cream text-xs font-bold uppercase tracking-wide text-muted"><tr><th class="px-5 py-4">Pemohon</th><th class="px-5 py-4">Materi</th><th class="px-5 py-4">Tanggal</th><th class="px-5 py-4">Status</th><th class="px-5 py-4">Tindakan</th></tr></thead>
+                                <thead class="bg-cream text-xs font-bold uppercase tracking-wide text-muted"><tr><th class="px-5 py-4">Pemohon</th><th class="px-5 py-4">Materi</th><th class="px-5 py-4">Akses</th><th class="px-5 py-4">Tanggal</th><th class="px-5 py-4">Status</th><th class="px-5 py-4">Tindakan</th></tr></thead>
                                 <tbody class="divide-y divide-line">
                                     @foreach($requests as $downloadRequest)
                                         <tr id="request-{{ $downloadRequest->id }}">
                                             <td class="px-5 py-4">{{ $downloadRequest->requester_name }}<span class="block text-xs text-muted">{{ $downloadRequest->requester_email }}</span></td>
                                             <td class="px-5 py-4">{{ $downloadRequest->learningMaterial->title }}</td>
+                                            <td class="px-5 py-4">{{ $downloadRequest->requested_action === 'read' ? 'Membaca' : 'Mengunduh' }}</td>
                                             <td class="px-5 py-4">{{ $downloadRequest->created_at->format('d M Y H:i') }}</td>
                                             <td class="px-5 py-4">{{ ucfirst($downloadRequest->status) }}</td>
                                             <td class="px-5 py-4">
@@ -79,7 +80,7 @@
                                                 @else
                                                     <span class="mr-2 text-xs text-muted">{{ $downloadRequest->review_note ?: 'Sudah diproses' }}</span>
                                                 @endif
-                                                <form method="POST" action="{{ route('admin.materials.requests.destroy', $downloadRequest) }}" class="mt-2" onsubmit="return confirm('Hapus permintaan unduh ini?')">@csrf @method('DELETE')<button class="rounded-full border border-danger/30 px-3 py-2 text-xs font-bold text-danger">Delete</button></form>
+                                                <form method="POST" action="{{ route('admin.materials.requests.destroy', $downloadRequest) }}" class="mt-2" onsubmit="return confirm('Hapus permintaan izin ini?')">@csrf @method('DELETE')<button class="rounded-full border border-danger/30 px-3 py-2 text-xs font-bold text-danger">Delete</button></form>
                                             </td>
                                         </tr>
                                     @endforeach

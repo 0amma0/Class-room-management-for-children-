@@ -97,6 +97,13 @@
     @endphp
 
     <main>
+        @if($errors->any())
+            <div class="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
+                <x-ui-alert variant="danger" title="Permintaan belum dapat dikirim">
+                    <ul class="list-inside list-disc">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                </x-ui-alert>
+            </div>
+        @endif
         <section class="bg-[#FFF8EA] px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8">
             <div class="mx-auto max-w-6xl">
                 <div class="text-center">
@@ -262,11 +269,23 @@
             <a href="{{ route('regions') }}"
                 class="mt-5 inline-flex rounded-full bg-[#FBA93A] px-6 py-3 text-sm font-bold text-white hover:bg-[#e89726]">Find
                 a class</a>
-            <div
-                class="mx-auto mt-5 flex flex-wrap items-center justify-center gap-4 text-sm font-bold text-[#2E4BC0]">
-                <a href="{{ route('classes.module') }}" target="_blank" rel="noopener">Read Modul Buku 3</a>
-                <a href="{{ route('classes.module.download') }}">Download Modul Buku 3</a>
-            </div>
+            @if($bookModule)
+                <details class="mx-auto mt-6 max-w-2xl rounded-2xl border border-[#EFE4CC] bg-white p-5 text-left">
+                    <summary class="cursor-pointer text-center font-display font-bold text-[#2E4BC0]">Ajukan izin membaca atau mengunduh Modul Buku 3</summary>
+                    <p class="mt-3 text-sm text-[#65737D]">Admin harus menyetujui permintaan sebelum file dapat dibuka. Simpan tautan status setelah mengirim permintaan.</p>
+                    <form method="POST" action="{{ route('learning-materials.requests.store', $bookModule) }}" class="mt-4 grid gap-3 sm:grid-cols-2">
+                        @csrf
+                        <label class="space-y-1 text-xs font-semibold text-[#1F2F8A]"><span>Nama</span><input name="requester_name" value="{{ old('requester_name') }}" required maxlength="255" autocomplete="name" class="w-full rounded-xl border border-[#EFE4CC] px-3 py-2 text-sm font-normal"></label>
+                        <label class="space-y-1 text-xs font-semibold text-[#1F2F8A]"><span>Email</span><input type="email" name="requester_email" value="{{ old('requester_email') }}" required maxlength="255" autocomplete="email" class="w-full rounded-xl border border-[#EFE4CC] px-3 py-2 text-sm font-normal"></label>
+                        <div class="flex flex-wrap gap-3 sm:col-span-2">
+                            <button name="requested_action" value="read" class="rounded-full bg-[#2E4BC0] px-5 py-2.5 text-sm font-bold text-white">Minta izin membaca</button>
+                            <button name="requested_action" value="download" class="rounded-full bg-[#FBA93A] px-5 py-2.5 text-sm font-bold text-white">Minta izin mengunduh</button>
+                        </div>
+                    </form>
+                </details>
+            @else
+                <p class="mx-auto mt-5 max-w-xl rounded-xl bg-white p-4 text-sm text-[#65737D]">Modul sedang tidak tersedia. Silakan hubungi Admin.</p>
+            @endif
             <details class="mx-auto mt-6 max-w-3xl rounded-2xl border border-[#EFE4CC] bg-white px-5 py-4 text-left">
                 <summary class="cursor-pointer font-display text-sm font-bold text-[#1F2F8A]">Lihat daftar kelas aktif ({{ $classes->count() }})</summary>
                 <ul class="mt-3 grid gap-2 text-sm text-[#1D2B33] sm:grid-cols-2">

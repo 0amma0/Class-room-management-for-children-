@@ -59,7 +59,7 @@ class ActivityController extends Controller
             });
         } catch (Throwable $exception) {
             if ($imagePath !== null) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::disk('local')->delete($imagePath);
             }
 
             throw $exception;
@@ -90,7 +90,7 @@ class ActivityController extends Controller
             });
         } catch (Throwable $exception) {
             if ($imagePath !== null) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::disk('local')->delete($imagePath);
             }
 
             throw $exception;
@@ -123,8 +123,8 @@ class ActivityController extends Controller
             return null;
         }
 
-        $path = $request->file('image')->store('activity-photos', 'public');
-        if (! is_string($path) || ! Storage::disk('public')->exists($path)) {
+        $path = $request->file('image')->store('activity-photos', 'local');
+        if (! is_string($path) || ! Storage::disk('local')->exists($path)) {
             throw ValidationException::withMessages(['image' => 'Gambar kegiatan gagal disimpan. Silakan coba lagi.']);
         }
 

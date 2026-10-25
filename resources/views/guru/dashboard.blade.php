@@ -3,7 +3,7 @@
         <section class="relative overflow-hidden rounded-[28px] bg-sky p-6 shadow-sm sm:p-8 lg:p-10">
             <div class="pointer-events-none absolute -right-10 -top-12 size-56 rounded-full bg-white/20"></div>
             <div class="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-                <x-ui-avatar type="bangs" size="xl" class="border-4 border-white shadow-md" :alt="auth()->user()->name" />
+                <x-ui-avatar :type="auth()->user()->avatar_type ?? 'bangs'" :image="auth()->user()->avatar_path" size="xl" class="border-4 border-white shadow-md" :alt="auth()->user()->name" />
                 <div class="max-w-2xl">
                     <span class="inline-flex rounded-full bg-white/70 px-3 py-1 text-xs font-bold text-navy">Teacher workspace</span>
                     <h1 class="mt-3 font-display text-3xl font-bold text-navy sm:text-4xl">

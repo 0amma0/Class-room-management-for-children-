@@ -17,6 +17,9 @@
         @if(session('success'))
             <x-ui-alert variant="ok">{{ session('success') }}</x-ui-alert>
         @endif
+        @if(session('warning'))
+            <x-ui-alert variant="warning">{{ session('warning') }}</x-ui-alert>
+        @endif
 
         @error('backup')
             <x-ui-alert variant="danger">{{ $message }}</x-ui-alert>
@@ -51,6 +54,11 @@
         <section class="overflow-hidden rounded-3xl border border-line bg-white shadow-sm" aria-label="Stored backups">
             <div class="border-b border-line px-5 py-4">
                 <h2 class="font-display text-lg font-bold text-ink">Available backups</h2>
+                <form method="POST" action="{{ route('admin.backups.destroy-all') }}" class="mt-3" onsubmit="return confirm('Hapus semua file backup SQL? Data database dan log audit tidak akan dihapus.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="rounded-full border border-danger/30 px-4 py-2 text-xs font-bold text-danger">Delete All SQL Backups</button>
+                </form>
             </div>
             @if($backups->isEmpty())
                 <p class="px-5 py-10 text-center text-sm text-muted">No backups have been created yet.</p>

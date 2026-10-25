@@ -2,6 +2,7 @@
     'type' => 'bangs',
     'size' => 'md',
     'alt' => '',
+    'image' => null,
 ])
 
 @php
@@ -30,7 +31,7 @@ $avatarImage = $avatarImages[$type] ?? $avatarImages['bangs'];
 
 <span {{ $attributes->merge(['class' => "inline-flex shrink-0 overflow-hidden rounded-full {$sizeClasses}"]) }}>
     <img
-        src="{{ asset('images/Avatar/'.$avatarImage) }}"
+        src="{{ $image ? \Illuminate\Support\Facades\Storage::disk('public')->url($image) : asset('images/Avatar/'.$avatarImage) }}"
         alt="{{ $alt }}"
         class="h-full w-full object-cover"
         loading="lazy"

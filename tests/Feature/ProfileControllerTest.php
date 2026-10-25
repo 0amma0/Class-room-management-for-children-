@@ -12,7 +12,6 @@ test('an authenticated user can update profile information without changing the 
     $user = User::factory()->admin()->create([
         'password' => 'OldPassword123',
         'email' => 'old@example.test',
-        'must_change_password' => true,
     ]);
 
     $response = $this->actingAs($user)->put(route('profile.update'), [
@@ -27,7 +26,7 @@ test('an authenticated user can update profile information without changing the 
         ->and($user->email)->toBe('new@example.test')
         ->and($user->phone)->toBe('08123456789')
         ->and(Hash::check('OldPassword123', $user->password))->toBeTrue()
-        ->and($user->must_change_password)->toBeTrue();
+        ->and($user->must_change_password)->toBeFalse();
 });
 
 test('a password change requires the correct current password on its separate form', function () {
@@ -40,6 +39,18 @@ test('a password change requires the correct current password on its separate fo
     ]);
 
     $response->assertSessionHasErrors('current_password');
+    expect(Hash::check('OldPassword123', $user->fresh()->password))->toBeTrue();
+});
+
+test('an admin must use a strong new password on the profile password form', function () {
+    $user = User::factory()->admin()->create(['password' => 'OldPassword123']);
+
+    $this->actingAs($user)->post(route('password.update'), [
+        'current_password' => 'OldPassword123',
+        'password' => 'WeakPassword123',
+        'password_confirmation' => 'WeakPassword123',
+    ])->assertSessionHasErrors('password');
+
     expect(Hash::check('OldPassword123', $user->fresh()->password))->toBeTrue();
 });
 
@@ -93,12 +104,12 @@ test('a user can change their password without submitting profile fields', funct
 
     $this->actingAs($user)->post(route('password.update'), [
         'current_password' => 'OldPassword123',
-        'password' => 'NewPassword123',
-        'password_confirmation' => 'NewPassword123',
+        'password' => 'NewPassword123!',
+        'password_confirmation' => 'NewPassword123!',
     ])->assertRedirect(route('profile'));
 
     expect($user->fresh()->name)->toBe('Unchanged Admin')
-        ->and(Hash::check('NewPassword123', $user->fresh()->password))->toBeTrue();
+        ->and(Hash::check('NewPassword123!', $user->fresh()->password))->toBeTrue();
 });
 
 test('a user can choose one of the preset profile avatars', function () {
@@ -167,11 +178,45 @@ test('admin and teacher accounts receive separate profile forms', function () {
     $this->actingAs($admin)->get(route('profile'))
         ->assertOk()
         ->assertSee('Admin account details')
+        ->assertSee('name="username"', false)
         ->assertDontSee('Teaching profile');
     $this->actingAs($guru)->get(route('profile'))
         ->assertOk()
         ->assertSee('Teaching profile')
         ->assertDontSee('Admin account details');
+});
+
+test('an admin can update their login username and another accounts username is rejected', function () {
+    $admin = User::factory()->admin()->create(['username' => 'original_admin']);
+    $otherAdmin = User::factory()->admin()->create(['username' => 'other_admin']);
+
+    $this->actingAs($admin)->put(route('profile.update'), [
+        'name' => $admin->name,
+        'username' => 'updated_admin',
+        'email' => $admin->email,
+    ])->assertRedirect(route('profile'));
+
+    expect($admin->fresh()->username)->toBe('updated_admin');
+
+    $this->actingAs($admin)->put(route('profile.update'), [
+        'name' => $admin->name,
+        'username' => $otherAdmin->username,
+        'email' => $admin->email,
+    ])->assertSessionHasErrors('username');
+
+    expect($admin->fresh()->username)->toBe('updated_admin');
+});
+
+test('a teacher cannot change their login username through profile input', function () {
+    $guru = User::factory()->guru()->create(['username' => 'fixed_teacher_login']);
+
+    $this->actingAs($guru)->put(route('profile.update'), [
+        'name' => $guru->name,
+        'username' => 'changed_by_teacher',
+        'email' => $guru->email,
+    ])->assertRedirect(route('profile'));
+
+    expect($guru->fresh()->username)->toBe('fixed_teacher_login');
 });
 
 test('a teacher can update linked teacher profile details from the teacher profile form', function () {

@@ -64,7 +64,7 @@
     <!-- 2. HERO SECTION matching 01-beranda-publik_part1.png -->
     <section id="home" class="relative bg-[#8ED6EC] pt-14 pb-28 px-6 overflow-hidden">
         <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-            <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+            <div class="home-hero-copy lg:col-span-7 space-y-6 text-center lg:text-left">
                 <!-- Tag pill -->
                 <div class="inline-block">
                     <span class="inline-block px-4 py-1.5 rounded-full text-xs font-display font-bold bg-[#FFF2D4] text-[#D97706] shadow-xs">
@@ -97,11 +97,11 @@
             </div>
 
             <!-- Approved illustration asset from public/images -->
-            <div class="lg:col-span-5 flex justify-center">
+            <div class="home-hero-art lg:col-span-5 flex justify-center">
                 <img
                     src="{{ asset('images/imganak.png') }}"
                     alt="Children holding hands and playing together"
-                    class="w-full max-w-lg drop-shadow-xl"
+                    class="home-hero-image w-full max-w-lg drop-shadow-xl"
                     fetchpriority="high"
                 >
             </div>
@@ -109,14 +109,14 @@
 
         <!-- Scalloped Repeating Cloud Edge Divider matching mockup -->
         <div class="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-none z-0">
-            <svg class="relative block w-full h-14 text-white" viewBox="0 0 1200 60" preserveAspectRatio="none">
+            <svg class="home-cloud-divider relative block h-14 text-white" viewBox="0 0 1200 60" preserveAspectRatio="none">
                 <path d="M0,60 C40,10 80,10 120,60 C160,10 200,10 240,60 C280,10 320,10 360,60 C400,10 440,10 480,60 C520,10 560,10 600,60 C640,10 680,10 720,60 C760,10 800,10 840,60 C880,10 920,10 960,60 C1000,10 1040,10 1080,60 C1120,10 1160,10 1200,60 L1200,60 L0,60 Z" fill="currentColor"></path>
             </svg>
         </div>
     </section>
 
     <!-- 3. PURPOSE SECTION matching 01-beranda-publik_part1.png & part2.png -->
-    <section id="about" class="py-20 px-6 bg-white">
+    <section id="about" class="reveal-on-scroll py-20 px-6 bg-white">
         <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
             <!-- Left: Circle with 4 cartoon avatar faces in 2x2 grid -->
             <div class="md:col-span-5 flex justify-center">
@@ -160,10 +160,10 @@
     </section>
 
     <!-- 4. OUR COMMUNITIES IN WEST JAVA (Deep Royal Blue `#1F2F8A` / `#253ca8`) matching 01-beranda-publik_part2.png -->
-    <section id="communities" class="relative bg-[#1F2F8A] pt-16 pb-24 px-6 text-white overflow-hidden">
+    <section id="communities" class="reveal-on-scroll relative bg-[#1F2F8A] pt-16 pb-24 px-6 text-white overflow-hidden">
         <!-- Top Scalloped Cloud Divider from White into Deep Blue -->
         <div class="absolute top-0 left-0 right-0 w-full overflow-hidden leading-none z-0">
-            <svg class="relative block w-full h-10 text-white" viewBox="0 0 1200 40" preserveAspectRatio="none">
+            <svg class="home-cloud-divider relative block h-10 text-white" viewBox="0 0 1200 40" preserveAspectRatio="none">
                 <path d="M0,0 C40,30 80,30 120,0 C160,30 200,30 240,0 C280,30 320,30 360,0 C400,30 440,30 480,0 C520,30 560,30 600,0 C640,30 680,30 720,0 C760,30 800,30 840,0 C880,30 920,30 960,0 C1000,30 1040,30 1080,0 C1120,30 1160,30 1200,0 L1200,0 L0,0 Z" fill="currentColor"></path>
             </svg>
         </div>
@@ -333,7 +333,7 @@
     </section>
 
     <!-- 5. OUR CLASSES SECTION matching 01-beranda-publik_part3.png -->
-    <section id="classes" class="py-20 px-6 bg-[#1F2F8A] text-white relative">
+    <section id="classes" class="reveal-on-scroll py-20 px-6 bg-[#1F2F8A] text-white relative">
         <!-- Subtle Star Accents -->
         <span class="absolute top-10 left-12 text-[#FFD86B] text-2xl select-none">★</span>
         <span class="absolute top-20 right-20 text-[#FFD86B] text-xl select-none">★</span>
@@ -363,7 +363,7 @@
             @else
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     @foreach($classes as $class)
-                        <div class="bg-white rounded-[28px] border-2 border-white/20 overflow-hidden shadow-xl text-[#1D2B33] flex flex-col justify-between hover:-translate-y-1 transition-transform">
+                        <div class="home-motion-card bg-white rounded-[28px] border-2 border-white/20 overflow-hidden shadow-xl text-[#1D2B33] flex flex-col justify-between hover:-translate-y-1 transition-transform">
                             <div class="relative aspect-[16/10] w-full overflow-hidden bg-[#8ED6EC]/35">
                                 @if($class['photo_path'])
                                     <img
@@ -425,7 +425,7 @@
     </section>
 
     <!-- 6. WHAT WE DO / ACTIVITIES SECTION matching 01-beranda-publik_part4.png -->
-    <section id="activities" class="py-20 px-6 bg-[#FFF8EA]">
+    <section id="activities" class="reveal-on-scroll py-20 px-6 bg-[#FFF8EA]">
         <div class="max-w-6xl mx-auto">
             <div class="text-center max-w-2xl mx-auto mb-14">
                 <span class="inline-block px-4 py-1 rounded-full text-xs font-display font-bold bg-[#FFF2D4] text-[#D97706]">
@@ -458,7 +458,7 @@
                             $cardImageUrl = asset('images/Kartu Kegiatan.png');
                         }
                     @endphp
-                    <article class="flex flex-col items-center overflow-hidden rounded-[28px] border-2 border-[#EFE4CC] bg-white p-7 text-center shadow-xs transition-shadow hover:shadow-md">
+                    <article class="home-motion-card flex flex-col items-center overflow-hidden rounded-[28px] border-2 border-[#EFE4CC] bg-white p-7 text-center shadow-xs transition-shadow hover:shadow-md">
                         <img src="{{ $cardImageUrl }}" alt="" class="mb-5 aspect-square w-28 rounded-full object-cover" loading="lazy">
                         <h3 class="font-display text-lg font-bold text-[#1D2B33]">{{ is_array($card) ? $card['title'] : $card->title }}</h3>
                         <p class="mt-2 text-xs leading-relaxed text-[#65737D]">{{ is_array($card) ? $card['description'] : $card->description }}</p>
@@ -478,7 +478,7 @@
                         @foreach($activities as $act)
                             <article class="overflow-hidden rounded-2xl border border-[#EFE4CC] bg-white shadow-xs">
                                 @if($act->approvedPhotos->isNotEmpty())
-                                    <img src="{{ \Illuminate\Support\Facades\Storage::url($act->approvedPhotos->first()->file_url) }}" alt="" class="h-40 w-full object-cover" loading="lazy">
+                                    <img src="{{ route('activity-photos.show', $act->approvedPhotos->first()) }}" alt="" class="h-40 w-full object-cover" loading="lazy">
                                 @else
                                     <img src="{{ asset('images/imganak.png') }}" alt="" class="h-40 w-full object-cover" loading="lazy">
                                 @endif
@@ -498,10 +498,10 @@
     </section>
 
     <!-- 7. BIG NUMBERS STATS PITA matching 01-beranda-publik_part4.png -->
-    <section class="relative bg-[#1F2F8A] pt-14 pb-14 px-6 text-white overflow-hidden">
+    <section class="reveal-on-scroll relative bg-[#1F2F8A] pt-14 pb-14 px-6 text-white overflow-hidden">
         <!-- Top Scalloped Cloud Divider from Cream into Deep Blue -->
         <div class="absolute top-0 left-0 right-0 w-full overflow-hidden leading-none z-0">
-            <svg class="relative block w-full h-8 text-[#FFF8EA]" viewBox="0 0 1200 40" preserveAspectRatio="none">
+            <svg class="home-cloud-divider relative block h-8 text-[#FFF8EA]" viewBox="0 0 1200 40" preserveAspectRatio="none">
                 <path d="M0,0 C40,30 80,30 120,0 C160,30 200,30 240,0 C280,30 320,30 360,0 C400,30 440,30 480,0 C520,30 560,30 600,0 C640,30 680,30 720,0 C760,30 800,30 840,0 C880,30 920,30 960,0 C1000,30 1040,30 1080,0 C1120,30 1160,30 1200,0 L1200,0 L0,0 Z" fill="currentColor"></path>
             </svg>
         </div>
@@ -578,4 +578,21 @@
             </div>
         </div>
     </footer>
+
+<script>
+    if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('motion-enabled');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                } else {
+                    entry.target.classList.remove('is-visible');
+                }
+            });
+        }, { threshold: 0.12 });
+
+        document.querySelectorAll('.reveal-on-scroll').forEach((section) => revealObserver.observe(section));
+    }
+</script>
 </x-guest-layout>

@@ -32,6 +32,24 @@ body {
     background-color: var(--color-cream);
 }
 
+form,
+form label {
+    min-width: 0;
+    max-width: 100%;
+}
+
+form input,
+form select,
+form textarea {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+form input[type="file"] {
+    width: 100%;
+}
+
 .scrollbar-hidden {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -55,6 +73,96 @@ h1, h2, h3, h4, h5, h6, .font-display {
     outline-offset: 3px;
 }
 
+.motion-enabled .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(22px) scale(0.985);
+    transition: opacity 600ms cubic-bezier(0.22, 1, 0.36, 1), transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.motion-enabled .reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.home-cloud-divider {
+    left: -10%;
+    width: 120%;
+    animation: home-cloud-drift 24s ease-in-out infinite alternate;
+    will-change: transform;
+}
+
+.home-hero-copy > * {
+    animation: home-rise-in 650ms both;
+}
+
+.home-hero-copy > :nth-child(2) {
+    animation-delay: 100ms;
+}
+
+.home-hero-copy > :nth-child(3) {
+    animation-delay: 180ms;
+}
+
+.home-hero-copy > :nth-child(4) {
+    animation-delay: 260ms;
+}
+
+.home-hero-art {
+    animation: home-gentle-float 6s ease-in-out 700ms infinite;
+}
+
+.home-hero-image {
+    animation: home-rise-in 750ms 120ms both;
+}
+
+.home-motion-card {
+    transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.home-motion-card:hover {
+    transform: translateY(-5px);
+}
+
+.home-motion-card img {
+    transition: transform 300ms ease;
+}
+
+.home-motion-card:hover img {
+    transform: scale(1.04);
+}
+
+@keyframes home-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes home-gentle-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes home-cloud-drift {
+    from {
+        transform: translateX(-2.5%);
+    }
+
+    to {
+        transform: translateX(2.5%);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -63,5 +171,29 @@ h1, h2, h3, h4, h5, h6, .font-display {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    .motion-enabled .reveal-on-scroll,
+    .motion-enabled .reveal-on-scroll.is-visible {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .home-hero-copy > *,
+    .home-hero-art,
+    .home-hero-image,
+    .home-cloud-divider {
+        animation: none;
+    }
+
+    .home-motion-card,
+    .home-motion-card img {
+        transition: none;
+    }
+
+    .home-motion-card:hover,
+    .home-motion-card:hover img {
+        transform: none;
     }
 }

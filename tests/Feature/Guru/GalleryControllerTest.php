@@ -64,5 +64,42 @@ test('a teacher cannot upload gallery photos to or view photos from an unassigne
     ])->assertNotFound();
 
     $this->get(route('guru.gallery.file', $photo))->assertNotFound();
+    $this->delete(route('guru.gallery.destroy', $photo))->assertNotFound();
     $this->assertDatabaseCount('class_gallery_photos', 1);
+});
+
+test('a teacher can delete a gallery photo only from an assigned class', function () {
+    Storage::fake('local');
+    $region = Region::create(['name' => 'Wilayah Hapus', 'code' => 'WIL-H', 'is_active' => true]);
+    $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Klaster Hapus', 'is_active' => true]);
+    $environment = Environment::create(['cluster_id' => $cluster->id, 'name' => 'Lingkungan Hapus', 'is_active' => true]);
+    $teacher = Teacher::create(['full_name' => 'Guru Hapus', 'status' => 'active']);
+    $guru = User::factory()->guru()->create(['teacher_id' => $teacher->id]);
+    $class = Classes::create(['environment_id' => $environment->id, 'name' => 'Kelas Hapus', 'status' => 'active']);
+    $class->teachers()->attach($teacher);
+    $photo = ClassGalleryPhoto::create([
+        'class_id' => $class->id,
+        'uploaded_by' => $guru->id,
+        'photo_date' => now()->toDateString(),
+        'file_path' => 'class-gallery/remove.png',
+    ]);
+    Storage::disk('local')->put($photo->file_path, 'private image');
+
+    $this->actingAs($guru)->delete(route('guru.gallery.destroy', $photo))
+        ->assertRedirect(route('guru.gallery'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('class_gallery_photos', ['id' => $photo->id]);
+    Storage::disk('local')->assertMissing('class-gallery/remove.png');
+
+    $missingFilePhoto = ClassGalleryPhoto::create([
+        'class_id' => $class->id,
+        'uploaded_by' => $guru->id,
+        'photo_date' => now()->toDateString(),
+        'file_path' => 'class-gallery/missing.png',
+    ]);
+    $this->actingAs($guru)->delete(route('guru.gallery.destroy', $missingFilePhoto))
+        ->assertRedirect(route('guru.gallery'))
+        ->assertSessionHas('success');
+    $this->assertDatabaseMissing('class_gallery_photos', ['id' => $missingFilePhoto->id]);
 });

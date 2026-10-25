@@ -11,6 +11,7 @@ use App\Models\Environment;
 use App\Models\Region;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -67,5 +68,42 @@ class BackupController extends Controller
             'Content-Type' => 'application/sql',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function destroyAll(Request $request): RedirectResponse
+    {
+        $disk = Storage::disk('local');
+        $paths = collect($disk->files('backups'))
+            ->filter(fn (string $path): bool => str_ends_with(strtolower($path), '.sql'));
+        $deleted = 0;
+        $failed = [];
+
+        foreach ($paths as $path) {
+            if ($disk->delete($path)) {
+                $deleted++;
+
+                continue;
+            }
+
+            $failed[] = basename($path);
+            Log::error('Unable to delete stored SQL backup.', ['path' => $path, 'user_id' => $request->user()->id]);
+        }
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'deleted',
+            'entity_type' => 'database_backup_bulk',
+            'meta' => ['deleted_count' => $deleted, 'failed_count' => count($failed)],
+            'ip' => $request->ip(),
+        ]);
+
+        if ($failed !== []) {
+            return redirect()->route('admin.backups')
+                ->with('warning', $deleted.' backup dihapus; '.count($failed).' file gagal dihapus: '.implode(', ', $failed));
+        }
+
+        return redirect()->route('admin.backups')->with('success', $deleted === 0
+            ? 'Tidak ada file backup SQL untuk dihapus.'
+            : $deleted.' file backup SQL berhasil dihapus.');
     }
 }

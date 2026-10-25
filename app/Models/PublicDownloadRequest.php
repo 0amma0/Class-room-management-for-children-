@@ -16,6 +16,7 @@ class PublicDownloadRequest extends Model
         'learning_material_id',
         'requester_name',
         'requester_email',
+        'requested_action',
         'access_token_hash',
         'status',
         'reviewed_by',

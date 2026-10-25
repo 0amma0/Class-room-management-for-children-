@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Activity;
+use App\Models\ActivityPhoto;
 use App\Models\Classes;
 use App\Models\Cluster;
 use App\Models\Environment;
@@ -105,4 +106,49 @@ test('a class photo selected by an administrator appears on the public class car
     $photoUrl = Storage::disk('public')->url($class->photo_path);
     Storage::disk('public')->assertExists($class->photo_path);
     $this->get(route('home'))->assertOk()->assertSee($photoUrl, false)->assertSee('Class photo for Public Photo Class');
+});
+
+test('an administrator can delete all reviewed activities and their stored photos', function () {
+    Storage::fake('public');
+    Storage::fake('local');
+    $admin = User::factory()->admin()->create();
+    $region = Region::create(['name' => 'Review Region']);
+    $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Review Cluster']);
+    $environment = Environment::create(['cluster_id' => $cluster->id, 'name' => 'Review Community']);
+    $class = Classes::create([
+        'environment_id' => $environment->id,
+        'name' => 'Review Class',
+        'status' => 'active',
+    ]);
+    $activity = Activity::create([
+        'title' => 'Activity to remove',
+        'scope_type' => 'class',
+        'class_id' => $class->id,
+        'status' => 'published',
+    ]);
+    $photo = ActivityPhoto::create([
+        'activity_id' => $activity->id,
+        'file_url' => 'activity-photos/review.png',
+        'caption' => 'Activity image',
+    ]);
+    Storage::disk('public')->put($photo->file_url, 'image');
+    Storage::disk('local')->put($photo->file_url, 'image');
+
+    $this->actingAs($admin)->get(route('admin.activities'))
+        ->assertOk()
+        ->assertSee('onsubmit="return confirm(', false);
+
+    $guru = User::factory()->guru()->create();
+    $this->actingAs($guru)->delete(route('admin.activities.destroy-all'))->assertForbidden();
+    $this->assertModelExists($activity);
+
+    $this->actingAs($admin)->delete(route('admin.activities.destroy-all'))
+        ->assertRedirect(route('admin.activities'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('activities', ['id' => $activity->id]);
+    $this->assertDatabaseMissing('activity_photos', ['id' => $photo->id]);
+    Storage::disk('public')->assertMissing($photo->file_url);
+    Storage::disk('local')->assertMissing($photo->file_url);
+    $this->assertDatabaseHas('audit_logs', ['entity_type' => 'activity_review_bulk']);
 });

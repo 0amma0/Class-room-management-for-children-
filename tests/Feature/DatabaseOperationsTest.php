@@ -63,6 +63,37 @@ test('admin can view and download private backups but guru cannot', function () 
     $this->actingAs($guru)->get('/admin/backups')->assertForbidden();
 });
 
+test('admin can delete all SQL backups without deleting other files or audit logs', function () {
+    Storage::fake('local');
+    Storage::disk('local')->put('backups/first.sql', 'first dump');
+    Storage::disk('local')->put('backups/second.SQL', 'second dump');
+    Storage::disk('local')->put('backups/notes.txt', 'keep this file');
+    $admin = User::factory()->admin()->create();
+    $guru = User::factory()->guru()->create();
+    $audit = AuditLog::create([
+        'user_id' => $admin->id,
+        'action' => 'created',
+        'entity_type' => 'database_backup',
+        'meta' => ['filename' => 'keep-audit.sql'],
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.backups'))
+        ->assertOk()
+        ->assertSee('onsubmit="return confirm(', false);
+
+    $this->actingAs($guru)->delete(route('admin.backups.destroy-all'))->assertForbidden();
+    Storage::disk('local')->assertExists('backups/first.sql');
+
+    $this->actingAs($admin)->delete(route('admin.backups.destroy-all'))
+        ->assertRedirect(route('admin.backups'))
+        ->assertSessionHas('success');
+
+    Storage::disk('local')->assertMissing('backups/first.sql');
+    Storage::disk('local')->assertMissing('backups/second.SQL');
+    Storage::disk('local')->assertExists('backups/notes.txt');
+    $this->assertModelExists($audit);
+});
+
 test('restore command rejects paths outside the private backup directory', function () {
     $this->artisan('app:db-restore', ['file' => '../outside.sql'])
         ->assertFailed();
@@ -216,8 +247,34 @@ test('teacher account creation saves the profile, login, assignment and one prim
     ])->assertRedirect('/guru/dashboard');
 
     $this->assertAuthenticatedAs($user);
+    $this->get('/guru/dashboard')->assertRedirect(route('password.change'));
+    $this->post(route('password.update'), [
+        'current_password' => $credentials['password'],
+        'password' => 'NewGuruPass123',
+        'password_confirmation' => 'NewGuruPass123',
+    ])->assertRedirect(route('profile'));
     $this->get('/admin/dashboard')->assertForbidden();
     $this->get('/guru/dashboard')->assertOk();
+});
+
+test('teacher account creation rejects a primary class outside its assigned classes', function () {
+    $admin = User::factory()->admin()->create();
+    $region = Region::create(['name' => 'Region Validasi']);
+    $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Klaster Validasi']);
+    $environment = Environment::create(['cluster_id' => $cluster->id, 'name' => 'Lingkungan Validasi']);
+    $assignedClass = Classes::create(['environment_id' => $environment->id, 'name' => 'Kelas Ditugaskan']);
+    $otherClass = Classes::create(['environment_id' => $environment->id, 'name' => 'Kelas Lain']);
+
+    $this->actingAs($admin)->post(route('admin.teachers.store'), [
+        'full_name' => 'Guru Assignment Invalid',
+        'username' => 'guru_assignment_invalid',
+        'email' => 'guru-assignment-invalid@example.test',
+        'classes' => [(string) $assignedClass->id],
+        'primary_class_id' => (string) $otherClass->id,
+    ])->assertSessionHasErrors('primary_class_id');
+
+    $this->assertDatabaseMissing('teachers', ['full_name' => 'Guru Assignment Invalid']);
+    $this->assertDatabaseMissing('users', ['username' => 'guru_assignment_invalid']);
 });
 
 test('administrator can permanently delete a participant without history', function () {

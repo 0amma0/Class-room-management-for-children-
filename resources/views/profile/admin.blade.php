@@ -38,11 +38,11 @@
                 <section class="space-y-5 rounded-2xl border border-line bg-white p-5 shadow-sm sm:p-6">
                     <div>
                         <h2 class="font-display text-lg font-bold text-navy">Admin account details</h2>
-                        <p class="mt-1 text-sm text-muted">Manage your personal contact information and login email.</p>
+                        <p class="mt-1 text-sm text-muted">Manage the username and contact details used to access your administrator account.</p>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="space-y-1.5 text-xs font-bold text-navy"><span>Display name</span><input name="name" value="{{ old('name', $user->name) }}" required maxlength="255" class="w-full rounded-xl border border-line px-3 py-2.5 text-sm font-normal text-ink">@error('name')<span class="block text-xs text-danger">{{ $message }}</span>@enderror</label>
-                        <label class="space-y-1.5 text-xs font-bold text-navy"><span>Username</span><input value="{{ $user->username ?? '' }}" readonly class="w-full rounded-xl border border-line bg-cream/60 px-3 py-2.5 text-sm font-normal text-muted"></label>
+                        <label class="space-y-1.5 text-xs font-bold text-navy"><span>Username</span><input name="username" value="{{ old('username', $user->username) }}" required maxlength="255" autocomplete="username" class="w-full rounded-xl border border-line px-3 py-2.5 text-sm font-normal text-ink">@error('username')<span class="block text-xs text-danger">{{ $message }}</span>@enderror</label>
                         <label class="space-y-1.5 text-xs font-bold text-navy"><span>Email address</span><input type="email" name="email" value="{{ old('email', $user->email) }}" required maxlength="255" class="w-full rounded-xl border border-line px-3 py-2.5 text-sm font-normal text-ink">@error('email')<span class="block text-xs text-danger">{{ $message }}</span>@enderror</label>
                         <label class="space-y-1.5 text-xs font-bold text-navy"><span>Phone number (optional)</span><input name="phone" value="{{ old('phone', $user->phone) }}" maxlength="30" class="w-full rounded-xl border border-line px-3 py-2.5 text-sm font-normal text-ink">@error('phone')<span class="block text-xs text-danger">{{ $message }}</span>@enderror</label>
                     </div>
@@ -64,6 +64,7 @@
         <form method="POST" action="{{ route('password.update') }}" class="space-y-4 rounded-2xl border border-line bg-white p-5 shadow-sm sm:p-6">
             @csrf
             @include('profile.partials.password-fields')
+            <p class="text-xs text-muted">Masukkan kata sandi saat ini. Kata sandi Admin baru harus memiliki minimal 12 karakter, huruf besar-kecil, angka, dan simbol.</p>
             <div class="flex justify-end">
                 <button type="submit" class="rounded-full bg-navy px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-royal">Simpan Kata Sandi</button>
             </div>

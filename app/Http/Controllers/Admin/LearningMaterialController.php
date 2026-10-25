@@ -109,9 +109,10 @@ class LearningMaterialController extends Controller
                 ->update(['read_at' => now()]);
         });
 
+        $accessType = $downloadRequest->requested_action === 'read' ? 'membaca' : 'mengunduh';
         $message = $data['decision'] === 'approved'
-            ? 'Permintaan unduh disetujui.'
-            : 'Permintaan unduh ditolak.';
+            ? 'Permintaan izin '.$accessType.' disetujui.'
+            : 'Permintaan izin '.$accessType.' ditolak.';
 
         return redirect()->route('admin.materials', ['request' => $downloadRequest->id])
             ->with('success', $message);

@@ -54,7 +54,7 @@ test('public material requests stay locked until an admin approves them', functi
     ]);
     $this->actingAs($admin)->get(route('admin.materials'))
         ->assertOk()
-        ->assertSee('Permintaan izin unduh')
+        ->assertSee('Permintaan izin materi')
         ->assertSee('Public Reader');
     $this->get(route('learning-materials.requests.show', $token))->assertOk()->assertSee('menunggu persetujuan');
     $this->get(route('learning-materials.requests.download', $token))->assertForbidden();
@@ -71,6 +71,56 @@ test('public material requests stay locked until an admin approves them', functi
     $this->get(route('learning-materials.requests.download', $token))
         ->assertOk()
         ->assertHeader('Content-Type', 'application/pdf');
+});
+
+test('the class page requires approval for reading or downloading the Book 3 module', function () {
+    $admin = User::factory()->admin()->create();
+    $module = LearningMaterial::query()->where('slug', 'modul-buku-3')->firstOrFail();
+
+    $this->get(route('classes'))->assertOk()->assertSee('Minta izin membaca');
+    $this->get(route('classes.module'))->assertForbidden();
+    $this->get(route('classes.module.download'))->assertForbidden();
+
+    $response = $this->post(route('learning-materials.requests.store', $module), [
+        'requester_name' => 'Module Reader',
+        'requester_email' => 'module@example.test',
+        'requested_action' => 'read',
+    ]);
+    $token = Str::after((string) $response->headers->get('Location'), '/permintaan-materi/');
+    $downloadRequest = PublicDownloadRequest::query()->firstOrFail();
+
+    expect($downloadRequest->requested_action)->toBe('read');
+    $this->get(route('learning-materials.requests.read', $token))->assertForbidden();
+    $this->get(route('learning-materials.requests.download', $token))->assertForbidden();
+
+    $this->actingAs($admin)->post(route('admin.materials.requests.decide', $downloadRequest), [
+        'decision' => 'approved',
+    ])->assertRedirect();
+
+    $this->get(route('learning-materials.requests.show', $token))
+        ->assertOk()
+        ->assertSee('Baca materi');
+    $this->get(route('learning-materials.requests.read', $token))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('Content-Disposition', 'inline; filename="modul-buku-3.pdf"');
+    $this->get(route('learning-materials.requests.download', $token))->assertForbidden();
+
+    $downloadResponse = $this->post(route('learning-materials.requests.store', $module), [
+        'requester_name' => 'Module Downloader',
+        'requester_email' => 'download@example.test',
+        'requested_action' => 'download',
+    ]);
+    $downloadToken = Str::after((string) $downloadResponse->headers->get('Location'), '/permintaan-materi/');
+    $downloadRequest = PublicDownloadRequest::query()->where('requester_email', 'download@example.test')->firstOrFail();
+    $this->actingAs($admin)->post(route('admin.materials.requests.decide', $downloadRequest), [
+        'decision' => 'approved',
+    ])->assertRedirect();
+    $this->get(route('learning-materials.requests.download', $downloadToken))->assertDownload('modul-buku-3.pdf');
+
+    $guru = User::factory()->guru()->create(['must_change_password' => false]);
+    $this->actingAs($guru)->get(route('learning-materials.staff-download', $module))->assertForbidden();
+    $this->actingAs($guru)->get(route('guru.materials'))->assertDontSee('Modul Buku 3');
 });
 
 test('approved song requests redirect to the configured Google Drive folder', function () {
@@ -102,13 +152,14 @@ test('public, admin, and teacher material pages show their permitted actions', f
     $this->actingAs($admin)->get(route('admin.materials'))
         ->assertOk()
         ->assertSee('Tambah materi lagu, gambar, atau dokumen')
-        ->assertSee('Permintaan izin unduh');
+        ->assertSee('Permintaan izin materi');
 
     $guru = User::factory()->guru()->create();
     $this->actingAs($guru)->get(route('guru.materials'))
         ->assertOk()
         ->assertSee('Draft Lagu & Materi Pelajaran', false)
-        ->assertDontSee('Permintaan izin unduh');
+        ->assertDontSee('Permintaan izin materi')
+        ->assertDontSee('Modul Buku 3');
 });
 
 test('public material requests remain unavailable when rejected and other roles cannot decide', function () {
