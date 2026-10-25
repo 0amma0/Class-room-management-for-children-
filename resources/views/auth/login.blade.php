@@ -94,6 +94,16 @@
                     @enderror
                 </div>
 
+                @if(config('services.recaptcha.enabled'))
+                    <div>
+                        <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
+                        @error('g-recaptcha-response')
+                            <p class="mt-2 text-xs text-[#D64545]" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                @endif
+
                 <div class="pt-3">
                     <button
                         type="submit"

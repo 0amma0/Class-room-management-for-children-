@@ -7,7 +7,9 @@ use App\Models\Region;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -18,6 +20,163 @@ test('login screen can be rendered', function () {
 
     $response->assertStatus(200);
     $response->assertSee('Sign In');
+});
+
+test('login screen displays Google reCAPTCHA when configured', function () {
+    config([
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.site_key' => 'test-site-key',
+    ]);
+
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('https://www.google.com/recaptcha/api.js', false)
+        ->assertSee('data-sitekey="test-site-key"', false);
+});
+
+test('login requires a completed Google reCAPTCHA when configured', function () {
+    config([
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.secret_key' => 'test-secret-key',
+    ]);
+    Http::preventStrayRequests();
+
+    $response = $this->post('/login', [
+        'login' => 'captcha_user',
+        'password' => 'Password123',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('g-recaptcha-response');
+});
+
+test('login rejects a Google reCAPTCHA token that Google does not validate', function () {
+    config([
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.secret_key' => 'test-secret-key',
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.google.com/recaptcha/api/siteverify' => Http::response([
+            'success' => false,
+            'hostname' => 'localhost',
+            'error-codes' => ['invalid-input-response'],
+        ]),
+    ]);
+
+    $response = $this->post('/login', [
+        'login' => 'captcha_invalid_user',
+        'password' => 'Password123',
+        'g-recaptcha-response' => 'invalid-token',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('g-recaptcha-response');
+    Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://www.google.com/recaptcha/api/siteverify'
+        && $request['secret'] === 'test-secret-key'
+        && $request['response'] === 'invalid-token');
+});
+
+test('login authenticates only after Google validates the token for the configured hostname', function () {
+    config([
+        'app.url' => 'https://classes.example.test',
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.secret_key' => 'test-secret-key',
+        'services.recaptcha.hostname' => 'classes.example.test',
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.google.com/recaptcha/api/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'classes.example.test',
+        ]),
+    ]);
+    $admin = User::factory()->admin()->create([
+        'username' => 'captcha_admin',
+        'password' => 'Password123',
+        'status' => 'active',
+        'must_change_password' => false,
+    ]);
+
+    $response = $this->post('/login', [
+        'login' => 'captcha_admin',
+        'password' => 'Password123',
+        'g-recaptcha-response' => 'valid-google-token',
+    ]);
+
+    $this->assertAuthenticatedAs($admin);
+    $response->assertRedirect('/admin/dashboard');
+    Http::assertSent(fn (HttpRequest $request): bool => $request['remoteip'] === '127.0.0.1');
+});
+
+test('login rejects a valid Google token issued for a different hostname', function () {
+    config([
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.secret_key' => 'test-secret-key',
+        'services.recaptcha.hostname' => 'classes.example.test',
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.google.com/recaptcha/api/siteverify' => Http::response([
+            'success' => true,
+            'hostname' => 'attacker.example.test',
+        ]),
+    ]);
+
+    $response = $this->post('/login', [
+        'login' => 'other_host_user',
+        'password' => 'Password123',
+        'g-recaptcha-response' => 'valid-for-other-host',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('g-recaptcha-response');
+});
+
+test('login fails closed when Google reCAPTCHA cannot be reached', function () {
+    config([
+        'services.recaptcha.enabled' => true,
+        'services.recaptcha.secret_key' => 'test-secret-key',
+    ]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'https://www.google.com/recaptcha/api/siteverify' => Http::failedConnection(),
+    ]);
+
+    $response = $this->post('/login', [
+        'login' => 'captcha_network_error_user',
+        'password' => 'Password123',
+        'g-recaptcha-response' => 'unverified-token',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('g-recaptcha-response');
+});
+
+test('production login fails closed when Google reCAPTCHA keys are missing', function () {
+    app()->detectEnvironment(fn () => 'production');
+    config([
+        'services.recaptcha.enabled' => false,
+        'services.recaptcha.site_key' => null,
+        'services.recaptcha.secret_key' => null,
+    ]);
+    User::factory()->admin()->create([
+        'username' => 'unprotected_admin',
+        'password' => 'Password123',
+        'status' => 'active',
+        'must_change_password' => false,
+    ]);
+    $this->get('/login')->assertOk();
+    $csrfToken = session()->token();
+
+    $response = $this->post('/login', [
+        'login' => 'unprotected_admin',
+        'password' => 'Password123',
+        '_token' => $csrfToken,
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('login');
 });
 
 test('admin can authenticate and is redirected to admin dashboard', function () {

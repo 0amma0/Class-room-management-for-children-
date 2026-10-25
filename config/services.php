@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'hostname' => env('RECAPTCHA_HOSTNAME', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        'enabled' => (bool) env('RECAPTCHA_SITE_KEY') && (bool) env('RECAPTCHA_SECRET_KEY'),
+    ],
+
 ];

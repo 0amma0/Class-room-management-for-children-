@@ -365,9 +365,9 @@
                     @foreach($classes as $class)
                         <div class="home-motion-card bg-white rounded-[28px] border-2 border-white/20 overflow-hidden shadow-xl text-[#1D2B33] flex flex-col justify-between hover:-translate-y-1 transition-transform">
                             <div class="relative aspect-[16/10] w-full overflow-hidden bg-[#8ED6EC]/35">
-                                @if($class['photo_path'])
+                                @if($class['photo_url'])
                                     <img
-                                        src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($class['photo_path']) }}"
+                                        src="{{ $class['photo_url'] }}"
                                         alt="Class photo for {{ $class['name'] }}"
                                         class="absolute inset-0 h-full w-full object-cover"
                                         loading="lazy"

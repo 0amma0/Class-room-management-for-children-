@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ $title ?? 'Kelas Anak — Tumbuh Ceria Bersama' }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/Avatar/Bangs-01.png') }}?v=1">
 
     <!-- Google Fonts: Fredoka (Headings/Buttons) & Nunito (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

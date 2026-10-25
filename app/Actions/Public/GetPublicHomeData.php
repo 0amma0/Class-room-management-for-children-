@@ -9,6 +9,7 @@ use App\Models\PublicActivityCard;
 use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\Storage;
 
 class GetPublicHomeData
 {
@@ -37,7 +38,10 @@ class GetPublicHomeData
                     'environment_name' => $class->environment?->name ?? 'Community',
                     'location' => $class->location ?? 'Lokasi belum ditentukan',
                     'schedule' => $class->schedule ?? 'Sabtu · 09:00–11:00',
-                    'photo_path' => $class->photo_path,
+                    'photo_url' => $class->photo_path !== null
+                        && Storage::disk('public')->exists($class->photo_path)
+                            ? Storage::disk('public')->url($class->photo_path)
+                            : null,
                     'description' => 'A children\'s class for learning, playing, and sharing with caring teachers.',
                     // Privacy rule: if student count per class is < 3, display "< 3"
                     'student_count_display' => $class->students_count < 3 ? '< 3' : (string) $class->students_count,

@@ -28,6 +28,7 @@ use App\Http\Controllers\LearningMaterialController;
 use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\PublicClassesController;
 use App\Http\Controllers\PublicHomeController;
+use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\PublicRegionController;
 use App\Http\Controllers\ReflectionController;
 use App\Http\Controllers\StudentController;
@@ -37,6 +38,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public Home Route (No authentication required)
 Route::get('/', PublicHomeController::class)->name('home');
+Route::get('/public-media/{path}', [PublicMediaController::class, 'show'])
+    ->where('path', '.*')
+    ->name('public-media.show');
 Route::get('/classes', [PublicClassesController::class, 'index'])->name('classes');
 Route::get('/activity-photos/{photo}', [ActivityPhotoController::class, 'show'])
     ->whereNumber('photo')

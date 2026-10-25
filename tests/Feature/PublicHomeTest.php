@@ -8,6 +8,7 @@ use App\Models\Region;
 use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -55,9 +56,31 @@ test('public home page returns 200 for guests and does not leak private student 
     $response->assertSee('Lingkungan Mawar');
     $response->assertSee('href="'.route('regions').'"', false);
     $response->assertSee('href="'.route('classes').'"', false);
+    $response->assertSee(
+        '<link rel="icon" type="image/png" href="'.asset('images/Avatar/Bangs-01.png').'?v=1">',
+        false,
+    );
 
     // Rule: if student count per class is < 3, it should display "< 3"
     $response->assertSee('&lt; 3', false);
+});
+
+test('public home uses a fallback illustration when a class photo file is missing', function () {
+    Storage::fake('public', ['url' => '/public-media']);
+    $region = Region::create(['name' => 'West Java', 'is_active' => true]);
+    $cluster = Cluster::create(['region_id' => $region->id, 'name' => 'Fallback Cluster', 'is_active' => true]);
+    $environment = Environment::create(['cluster_id' => $cluster->id, 'name' => 'Fallback Community', 'is_active' => true]);
+    Classes::create([
+        'environment_id' => $environment->id,
+        'name' => 'Class with missing photo',
+        'photo_path' => 'class-photos/missing.png',
+        'status' => 'active',
+    ]);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee(asset('images/imganak.png'), false)
+        ->assertDontSee('/public-media/class-photos/missing.png', false);
 });
 
 test('public home renders gentle motion hooks without changing its content', function () {

@@ -63,6 +63,10 @@ test('admin can access dashboard and stats match seeded data', function () {
     $response = $this->actingAs($admin)->get('/admin/dashboard');
 
     $response->assertStatus(200);
+    $response->assertSee(
+        '<link rel="icon" type="image/png" href="'.asset('images/Avatar/Bangs-01.png').'?v=1">',
+        false,
+    );
 
     // Verify stat cards rendered
     $response->assertSee('Wilayah Aktif');

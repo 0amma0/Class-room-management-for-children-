@@ -102,7 +102,7 @@ Versi tersebut adalah keadaan instalasi saat pemeriksaan, bukan klaim tentang se
 | `database/factories/`, `database/seeders/` | Data factory dan seeder pengembangan. Seeder tidak menggantikan pembuatan Admin utama. |
 | `resources/views/` | Halaman Blade publik, Admin, Guru, Auth, layout, dan komponen UI. |
 | `resources/css/`, `resources/js/` | CSS dan JavaScript frontend yang masuk pipeline Vite. |
-| `public/images/`, `public/build/`, `public/storage/` | Aset lokal, build Vite, dan tautan storage publik. |
+| `public/images/`, `public/build/`, `public/storage/` | Aset lokal, build Vite, dan symbolic link storage opsional; gambar upload publik diakses lewat controller. |
 | `routes/web.php`, `routes/console.php` | Endpoint HTTP dan jadwal Artisan. |
 | `storage/app/` | File private, termasuk backup SQL, galeri Guru, dan storyboard. |
 | `tests/Feature/`, `tests/Unit/` | Tes HTTP/integrasi dan tes unit. |
@@ -184,7 +184,7 @@ Diagram ini merangkum relasi kunci, bukan seluruh kolom atau constraint tabel.
 
 - Backup database: disk `local`, direktori relatif `backups/`, file `.sql`; tidak ada tabel metadata backup.
 - Foto galeri dan storyboard: disk private `local`.
-- Avatar, foto kelas, dan aset konten yang memang dipublikasikan: menggunakan disk `public`; tautan `public/storage` perlu tersedia pada deployment.
+- Avatar, foto kelas, dan kartu aktivitas publik: menggunakan disk `public`, tetapi dikirim melalui route `/public-media/...`; route ini tidak membutuhkan symbolic link `public/storage`.
 - Foto aktivitas Guru disimpan pada disk privat `local`. Route foto hanya membuka foto berstatus disetujui pada aktivitas terbit untuk pengunjung; Admin dapat meninjau semua foto, sedangkan Guru hanya dapat melihat foto aktivitas kelas yang ditugaskan dan dibuat olehnya. Foto lama dipindahkan dari disk publik dengan `php artisan app:secure-activity-photos` sebelum hosting.
 - Modul Buku 3 berasal dari `docs/modul buku 3.pdf`, dikirim hanya melalui controller setelah pemeriksaan izin untuk pengunjung.
 
@@ -203,6 +203,7 @@ Diagram ini merangkum relasi kunci, bukan seluruh kolom atau constraint tabel.
 - Upload gallery memvalidasi file gambar, tipe, ukuran, kelas yang diakses; file dibuat pada storage privat, lalu metadata dicatat. Jika insert gagal, file baru dibersihkan dan exception tetap dilaporkan.
 - Penghapusan gallery memeriksa assignment Guru. Metadata dihapus dalam transaksi; file yang sudah hilang tidak menggagalkan penghapusan metadata. Kegagalan storage dicatat.
 - Upload foto aktivitas memvalidasi JPG/JPEG/PNG/WebP dan ukuran, lalu menyimpan file pada disk privat. Route file mengecek status publik/role/assignment sebelum mengirim gambar; foto tidak di-serve dari URL statis `public/storage`.
+- Gambar publik dari disk `public` hanya bisa disajikan dari folder avatar, foto kelas, dan kartu aktivitas serta harus ber-MIME image. URL menggunakan path relatif satu domain supaya host aplikasi tidak bergantung pada APP_URL yang mungkin tersimpan sebagai domain lama.
 - Jalankan `php artisan app:secure-activity-photos` sekali sebelum hosting untuk memindahkan file aktivitas lama ke disk privat; perintah dapat diulang dan melaporkan file yang hilang/gagal dipindahkan. `.htaccess` juga memblokir URL langsung `storage/activity-photos/` pada Apache.
 - Penghapusan Activity Review menghapus row `activity_photos` dahulu untuk menghormati foreign key, kemudian aktivitas; file di disk privat maupun file legacy publik hanya dihapus jika path berada pada prefix `activity-photos/`.
 - Avatar adalah data profil akun. Halaman yang menampilkan akun Guru membaca `avatar_path`/`avatar_type` dari user tersebut, bukan state global/cache.
@@ -231,11 +232,11 @@ Kontak publik dibaca dari data yang dikelola Admin. Chat menyimpan conversation 
 
 | Pemeriksaan | Hasil |
 | --- | --- |
-| Suite lengkap `php artisan test --compact` | Berhasil: 130 tes, 815 assertion. Pest melaporkan satu warning tanpa rincian pada output runner. |
+| Suite lengkap `php artisan test --compact` | Berhasil: 140 tes, 856 assertion. Pest melaporkan satu warning tanpa rincian pada output runner. |
 | Tes beranda `php artisan test --compact tests/Feature/PublicHomeTest.php` | Berhasil: 6 tes, 46 assertion. |
 | `npm run build` | Berhasil; Vite 8.3.4 menghasilkan manifest dan asset CSS/JS. |
 | `vendor/bin/pint --dirty --format agent` | Berhasil, exit code 0. |
-| `php artisan route:list --except-vendor` | Berhasil; 123 route terdaftar, termasuk foto aktivitas dengan pemeriksaan otorisasi. |
+| `php artisan route:list --except-vendor` | Berhasil; 124 route terdaftar, termasuk foto publik dan foto aktivitas dengan pemeriksaan akses. |
 | `php artisan migrate:status --no-interaction` | Berhasil; migration `2026_10_23_125218_add_requested_action_to_public_download_requests` berstatus Ran pada koneksi database aktif. Tidak ada reset database. |
 | Smoke test browser publik | Beranda, Classes, dan Login berhasil dimuat pada aplikasi lokal; tidak ada page error atau console error pada halaman yang diperiksa. Login hanya diperiksa tampilannya, tidak dikirim menggunakan kredensial akun riil. |
 | UI responsif dan animasi beranda | Pada viewport 390 px tidak ada horizontal overflow. Browser mengonfirmasi script scroll-reveal berjalan, section tampil saat masuk viewport dan tersembunyi kembali saat keluar, awan memakai animasi `home-cloud-drift`, serta konten tetap tampil dengan gerak diperkecil. |
@@ -250,7 +251,10 @@ Kontak publik dibaca dari data yang dikelola Admin. Chat menyimpan conversation 
 - Role Guru tidak dapat mengakses modul melalui endpoint staff; materi modul disembunyikan dari daftar materi Guru.
 - Gallery: tes meliputi upload dan tampil file privat, cek assignment, hapus gambar, dan hapus metadata saat file sudah tidak ada.
 - Foto aktivitas: tes memastikan upload memakai storage privat, foto menunggu review tidak dapat diakses pengunjung atau Guru yang tidak berwenang, foto disetujui tersedia untuk publik, dan file lama dapat dipindahkan ke storage privat.
+- Media publik: tes memastikan gambar di disk `public` dapat disajikan melalui aplikasi tanpa symbolic link, folder di luar daftar publik/non-image ditolak, dan foto kelas yang hilang memakai ilustrasi pengganti.
+- Favicon: avatar `Bangs-01.png` dirender di layout publik dan dashboard.
 - Security headers: tes memeriksa header respons dasar dan memastikan HSTS hanya dikirim pada HTTPS production.
+- Login CAPTCHA: tes mencakup widget saat konfigurasi aktif, token wajib, validasi Google dan hostname, kegagalan koneksi, serta login production yang ditolak jika key belum dikonfigurasi.
 - Avatar dan profile: update avatar/profile diuji terpisah dari perubahan password; sumber avatar yang tersimpan dirender di dashboard Guru dan daftar akun Admin.
 - Login/logout, route smoke Admin/Guru, navigasi publik dan akses kelas diuji melalui feature tests; animasi serta ukuran viewport beranda diuji dengan browser terintegrasi.
 
@@ -297,6 +301,7 @@ Tinjau migration dan koneksi tujuan sebelum menjalankan `migrate --force` pada p
 ### Hardening sebelum hosting
 
 - Gunakan `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` HTTPS, dan `SESSION_ENCRYPT=true`. Konfigurasi cookie otomatis mengaktifkan `Secure` ketika environment production; jangan menonaktifkannya setelah HTTPS siap.
+- Login dapat memakai Google reCAPTCHA v2 checkbox. Buat key bertipe reCAPTCHA v2 pada Google reCAPTCHA Admin Console untuk hostname domain hosting, lalu isi `RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY`, dan `RECAPTCHA_HOSTNAME` di environment hosting. Jangan pernah memakai secret key sebagai site key atau memasukkan secret ke HTML/source code. Pada production login menolak akses jika keys belum dikonfigurasi; di local/testing tanpa keys, CAPTCHA tidak aktif.
 - Buat `APP_KEY` unik untuk aplikasi melalui `php artisan key:generate` sebelum deploy dan simpan rahasia database hanya di environment server. Jangan upload `.env`, backup SQL, `storage/`, atau source code sebagai bagian document root.
 - Jadikan hanya direktori `public/` sebagai document root. Jika hosting tidak mengizinkan document root tersebut, pastikan semua direktori selain `public/` berada di luar web root dan atur ulang entry point dengan benar; jangan sekadar menyalin seluruh project ke folder publik.
 - Sebelum memakai data lama, buat backup privat terpisah, deploy source, jalankan `php artisan app:secure-activity-photos`, lalu verifikasi file aktivitas lama tersedia melalui route aplikasi dan tidak dapat dibuka lewat `/storage/activity-photos/...`.
@@ -311,5 +316,6 @@ Tinjau migration dan koneksi tujuan sebelum menjalankan `migrate --force` pada p
 - Pastikan disk `local` memiliki ruang dan izin tulis. Jangan menaruh backup SQL di folder publik atau source control.
 - Simpan salinan backup di lokasi terpisah sesuai kebijakan organisasi; backup lokal pada server bukan strategi disaster recovery eksternal.
 - Konfigurasikan mail transport sebelum mengandalkan pengingat email. Konfigurasi aktual yang diperiksa masih `log`.
-- Pastikan avatar/aset disk `public` dapat dijangkau melalui `public/storage`; galeri Guru dan foto aktivitas privat disajikan melalui controller berotorisasi.
+- Foto publik membutuhkan file fisik di `storage/app/public` pada server. Saat pindah hosting, file yang tersimpan di komputer lokal tidak otomatis ikut database/source code; salin folder `avatars/`, `class-photos/`, dan `activity-cards/` ke `storage/app/public/` pada hosting, atau unggah ulang melalui dashboard Admin. Pastikan akun PHP memiliki izin baca/tulis yang sesuai pada folder storage.
+- Favicon menggunakan `public/images/Avatar/Bangs-01.png`; setelah upload file layout terbaru, bersihkan cache browser untuk melihat ikon yang baru.
 - Jika login/session gagal, periksa status MySQL dan koneksi database karena session memakai driver `database`; jangan menghapus tabel `sessions` sebagai jalan pintas.
